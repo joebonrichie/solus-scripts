@@ -14,7 +14,7 @@
 MAINPAK="foobar"
 
 # Track any troublesome packages here to deal with them manually. 
-manual="dogshit catshit"
+MANUAL="dogshit catshit"
 
 # The packages to rebuild, in the order they need to be rebuilt.
 # Use eopkg info and eopkg-deps to get the rev deps of the main package
@@ -86,15 +86,15 @@ build() {
 # Use tool of choice here to verify changes e.g. git diff, meld, etc.
 verify() {
     pushd ~/rebuilds/${MAINPAK}
-	for i in ${PACKAGES}
-	do
-	  pushd ${i}
-	    var=$((var+1))
-	    echo "Verifying package" ${var} "out of" $(package_count) 
-	    git difftool --tool=gvimdiff3
-          popd
-	done
-	popd
+    for i in ${PACKAGES}
+    do
+      pushd ${i}
+        var=$((var+1))
+        echo "Verifying package" ${var} "out of" $(package_count) 
+        git difftool --tool=gvimdiff3
+      popd
+    done
+    popd
 }
 
 # Add and commit changes before publishing.
@@ -108,7 +108,7 @@ commit() {
         echo "Committing package" ${var} "out of" $(package_count) 
         make clean
         git add *
-        git commit -s "Rebuild against foobar"
+        git commit -m "Rebuild against foobar"
       popd
     done
     popd
@@ -128,12 +128,13 @@ publish() {
         make publish
         
         # Figure out eopkg string.
-        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }'`
-        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }'`
-        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }'`
+        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
+        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
+        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
         sleep 20
 
+        # Take note: your unstable repo can be called anything.
         while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
           echo "${i} not ready"
           sleep 30
@@ -204,5 +205,5 @@ cleanLocal(){
     popd
 }
 
-# This little guy allows to call functions as arguements.
+# This little guy allows to call functions as arguments.
 "$@"
