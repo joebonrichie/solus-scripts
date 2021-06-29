@@ -10,6 +10,9 @@
 # Typically, you would build the MAINPAK as usual and place it in /var/lib/solbuild/local
 # Then run ./rebuild.sh {setup,bump,build,verify,commit,publish} for a typical workflow.
 
+# Don't DOS the server
+CONCURRENT_NETWORK_REQUESTS=8
+
 # The package we are building against. Should be in local repo.
 MAINPAK="foobar"
 
@@ -36,10 +39,13 @@ setup() {
     ln -sv common/Makefile.toplevel Makefile
     ln -sv common/Makefile.iso .
     set -e
+    (
     for i in ${PACKAGES}
       do
-        git clone ssh://vcs@dev.getsol.us:2222/source/${i}.git
+        ((j=j%CONCURRENT_NETWORK_REQUESTS)); ((j++==0)) && wait
+        git clone ssh://vcs@dev.getsol.us:2222/source/${i}.git &
       done
+    )
     popd
 }
 
