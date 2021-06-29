@@ -56,6 +56,8 @@ bump() {
       do
         pushd ${i}
           make bump
+          # Backup for when pyyaml shits the bed with sources
+          # perl -i -pe 's/(release    : )(\d+)$/$1.($2+1)/e' package.yml
         popd
       done
     popd
