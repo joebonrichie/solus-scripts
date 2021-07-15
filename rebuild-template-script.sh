@@ -39,12 +39,16 @@ setup() {
     ln -sv common/Makefile.toplevel Makefile
     ln -sv common/Makefile.iso .
     set -e
+    popd
+}
+
+clone() {
+    pushd ~/rebuilds/${MAINPAK}
     (
-    for i in ${PACKAGES}
-      do
+    for i in ${PACKAGES}; do
         ((j=j%CONCURRENT_NETWORK_REQUESTS)); ((j++==0)) && wait
         git clone ssh://vcs@dev.getsol.us:2222/source/${i}.git &
-      done
+    done
     )
     popd
 }
