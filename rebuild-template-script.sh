@@ -217,5 +217,12 @@ cleanLocal(){
     popd
 }
 
+checkDeleteCache() {
+    DISKUSAGE=`df -H / | awk '{ print $5 }' | cut -d'%' -f1 | sed 1d`
+    if [ $DISKUSAGE -ge 90 ]; then
+        sudo solbuild dc -a
+    fi
+}
+
 # This little guy allows to call functions as arguments.
 "$@"
