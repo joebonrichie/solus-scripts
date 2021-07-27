@@ -76,6 +76,9 @@ build() {
     do
       pushd ${i}
         var=$((var+1))
+        
+        # See if we need to free up some disk space before continuing.
+        $(checkDeleteCache)
 
         # Figure out the eopkg string.
         PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
@@ -217,6 +220,8 @@ cleanLocal(){
     popd
 }
 
+# If disk usage of the root parition is over a threshold then run
+# solbuild dc -a to free up disk space.
 checkDeleteCache() {
     DISKUSAGE=`df -H / | awk '{ print $5 }' | cut -d'%' -f1 | sed 1d`
     if [ $DISKUSAGE -ge 90 ]; then
