@@ -13,6 +13,9 @@
 # Don't DOS the server
 CONCURRENT_NETWORK_REQUESTS=8
 
+# At what percentage of disk usage does delete-cache run automatically
+DELETE_CACHE_THRESHOLD=80
+
 # The package we are building against. Should be in local repo.
 MAINPAK="foobar"
 
@@ -147,12 +150,15 @@ publish() {
         RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
         VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
-        sleep 20
 
         # Take note: your unstable repo can be called anything.
         while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
           echo "${i} not ready"
-          sleep 30
+          read -n 9 -t 10 -p "Waiting for package to be indexed..." input
+          if [[ "$input" = forcenext ]]; then
+             break
+          fi
+          echo ""
           sudo eopkg ur
         done
         echo "Finished ${i}"
@@ -224,7 +230,7 @@ cleanLocal(){
 # solbuild dc -a to free up disk space.
 checkDeleteCache() {
     DISKUSAGE=`df -H / | awk '{ print $5 }' | cut -d'%' -f1 | sed 1d`
-    if [ $DISKUSAGE -ge 90 ]; then
+    if [ $DISKUSAGE -ge $DELETE_CACHE_THRESHOLD ]; then
         sudo solbuild dc -a
     fi
 }
