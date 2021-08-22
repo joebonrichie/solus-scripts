@@ -154,11 +154,7 @@ publish() {
         # Take note: your unstable repo can be called anything.
         while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
           echo "${i} not ready"
-          read -n 9 -t 10 -p "Waiting for package to be indexed..." input
-          if [[ "$input" = forcenext ]]; then
-             break
-          fi
-          echo ""
+          sleep 30
           sudo eopkg ur
         done
         echo "Finished ${i}"
