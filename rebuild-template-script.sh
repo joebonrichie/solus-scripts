@@ -8,8 +8,8 @@
 # future to handle someof the shortcomings so scripts like these won't be neccessary.
 
 # Typically, you would build the MAINPAK as usual and place it in /var/lib/solbuild/local/$MAINPAK/
-# You'll need to copy /usr/share/solbuild/local-unstable-x86_64.profile to /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
-# and create an additional local repo in that profile that will not interfere with the standard local repo.
+# You'll need to copy local-unstable-MAINPAK-x86_64.profile to /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+# and rename MAINPAK to the package you are building against.
 # Then run ./rebuild.sh {setup,clone,bump,build,verify,commit,publish} for a typical workflow.
 
 # Don't DOS the server
@@ -35,7 +35,7 @@ package_count() {
     echo ${PACKAGES} | wc -w
 }
 
-# Setup a build repo and clone the packages to rebuild
+# Setup a build repo
 setup() {
     mkdir -p ~/rebuilds/${MAINPAK}
     sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
@@ -48,6 +48,7 @@ setup() {
     popd
 }
 
+# Concurrently clone repos
 clone() {
     pushd ~/rebuilds/${MAINPAK}
     (
