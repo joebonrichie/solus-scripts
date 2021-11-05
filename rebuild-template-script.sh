@@ -7,8 +7,10 @@
 # and ideally the tooling and infrastructure will be updated in the
 # future to handle someof the shortcomings so scripts like these won't be neccessary.
 
-# Typically, you would build the MAINPAK as usual and place it in /var/lib/solbuild/local
-# Then run ./rebuild.sh {setup,bump,build,verify,commit,publish} for a typical workflow.
+# Typically, you would build the MAINPAK as usual and place it in /var/lib/solbuild/local/$MAINPAK/
+# You'll need to copy /usr/share/solbuild/local-unstable-x86_64.profile to /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+# and create an additional local repo in that profile that will not interfere with the standard local repo.
+# Then run ./rebuild.sh {setup,clone,bump,build,verify,commit,publish} for a typical workflow.
 
 # Don't DOS the server
 CONCURRENT_NETWORK_REQUESTS=8
@@ -19,14 +21,14 @@ DELETE_CACHE_THRESHOLD=80
 # The package we are building against. Should be in local repo.
 MAINPAK="foobar"
 
-# Track any troublesome packages here to deal with them manually. 
-MANUAL="dogshit catshit"
-
 # The packages to rebuild, in the order they need to be rebuilt.
 # Use eopkg info and eopkg-deps to get the rev deps of the main package
 # and take care to order them properly as we currently do not have
 # a reverse dependency graph in eopkg.
 PACKAGES="foo bar xyz"
+
+# Track any troublesome packages here to deal with them manually.
+MANUAL="dogshit catshit"
 
 # Count the number of packages
 package_count() {
@@ -36,6 +38,7 @@ package_count() {
 # Setup a build repo and clone the packages to rebuild
 setup() {
     mkdir -p ~/rebuilds/${MAINPAK}
+    sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
     pushd ~/rebuilds/${MAINPAK}
     git clone ssh://vcs@dev.getsol.us:2222/source/common.git
     ln -sv common/Makefile.common .
@@ -91,10 +94,11 @@ build() {
 
         echo "Building package" ${var} "out of" $(package_count)
         # ! `ls *.eopkg`
-        if [[ ! `ls /var/lib/solbuild/local/${EOPKG}` ]]; then
+        if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
           echo "Package doesn't exist, building:" ${i}
-          make local
-          sudo mv *.eopkg /var/lib/solbuild/local
+          sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64.profile;
+          make abireport
+          sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
         fi;
         popd
 	done
@@ -181,9 +185,9 @@ moveLocaltoRepo() {
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
         echo "Moving package" ${var} "out of" $(package_count) "to build repo"
-        if [[ `ls /var/lib/solbuild/local/${EOPKG}` ]]; then
+        if [[ `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
           echo ${i}
-          sudo mv /var/lib/solbuild/local/${PKGNAME}-*${VERSION}-${RELEASE}-1-x86_64.eopkg .
+          sudo mv /var/lib/solbuild/local/${MAINPAK}/${PKGNAME}-*${VERSION}-${RELEASE}-1-x86_64.eopkg .
         fi;
       popd
     done
@@ -201,7 +205,7 @@ moveRepotoLocal() {
         echo "Moving package" ${var} "out of" $(package_count) "to local repo"
         if [[ `ls *.eopkg` ]]; then
           echo ${i}
-          sudo mv *.eopkg /var/lib/solbuild/local
+          sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
         fi;
       popd
     done
