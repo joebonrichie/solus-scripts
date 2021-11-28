@@ -84,32 +84,37 @@ bump() {
 # Check if the eopkg exists before attempting to build and skip if it does.
 build() {
     set -e
-    pushd ~/rebuilds/${MAINPAK}
-    for i in ${PACKAGES}
-    do
-      pushd ${i}
-        var=$((var+1))
+    # Do a naïve check that the package we are building against actually exists in the custom local repo before continuing.
+    if ( ls /var/lib/solbuild/local/${MAINPAK} | grep -q ${MAINPAK}); then
+        pushd ~/rebuilds/${MAINPAK}
+        for i in ${PACKAGES}
+        do
+        pushd ${i}
+            var=$((var+1))
         
-        # See if we need to free up some disk space before continuing.
-        $(checkDeleteCache)
+            # See if we need to free up some disk space before continuing.
+            $(checkDeleteCache)
 
-        # Figure out the eopkg string.
-        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
-        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
-        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
-        EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
+            # Figure out the eopkg string.
+            PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
+            RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
+            VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
+            EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
-        echo "Building package" ${var} "out of" $(package_count)
-        # ! `ls *.eopkg`
-        if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
-          echo "Package doesn't exist, building:" ${i}
-          sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64.profile;
-          make abireport
-          sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
-        fi;
+            echo "Building package" ${var} "out of" $(package_count)
+            # ! `ls *.eopkg`
+            if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
+                echo "Package doesn't exist, building:" ${i}
+                sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64.profile;
+                make abireport
+                sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
+            fi;
         popd
-	done
-	popd
+        done
+        popd
+    else
+        echo "No package ${MAINPAK} was found in the repo. Remember to copy it to /var/lib/solbuild/local/${MAINPAK} before starting."
+    fi
 }
 
 # Use tool of choice here to verify changes e.g. git diff, meld, etc.
