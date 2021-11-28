@@ -17,7 +17,7 @@
 image = "unstable-x86_64"
 
 ### REBUILDS ###
-- Rename MAINPAK according to rebuild-template-script.sh
+# Rename MAINPAK according to rebuild-template-script.sh
 ################
 
 # If you have a local repo providing packages that exist in the main
@@ -33,6 +33,9 @@ uri = "/var/lib/solbuild/local/MAINPAK"
 local = true
 autoindex = true
 
+### REBUILDS ###
+# The local repo can be removed to isolate the rebuilds from the local repo if desired
+################
 # A local repo with automatic indexing
 [repo.Local]
 uri = "/var/lib/solbuild/local"

@@ -18,7 +18,7 @@ CONCURRENT_NETWORK_REQUESTS=8
 # At what percentage of disk usage does delete-cache run automatically
 DELETE_CACHE_THRESHOLD=80
 
-# The package we are building against. Should be in local repo.
+# The package we are building against. Should be in our custom local repo.
 MAINPAK="foobar"
 
 # The packages to rebuild, in the order they need to be rebuilt.
@@ -35,17 +35,27 @@ package_count() {
     echo ${PACKAGES} | wc -w
 }
 
-# Setup a build repo
+# Setup a build repo and a custom local repo for the rebuilds
 setup() {
-    mkdir -p ~/rebuilds/${MAINPAK}
-    sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
-    pushd ~/rebuilds/${MAINPAK}
-    git clone ssh://vcs@dev.getsol.us:2222/source/common.git
-    ln -sv common/Makefile.common .
-    ln -sv common/Makefile.toplevel Makefile
-    ln -sv common/Makefile.iso .
-    set -e
-    popd
+    if [ ! -z "$MAINPAK" ]; then
+        # Setup the build repo
+        mkdir -p ~/rebuilds/${MAINPAK}
+        sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
+        pushd ~/rebuilds/${MAINPAK}
+        git clone ssh://vcs@dev.getsol.us:2222/source/common.git
+        ln -sv common/Makefile.common .
+        ln -sv common/Makefile.toplevel Makefile
+        ln -sv common/Makefile.iso .
+        # Setup a custom local repo
+        sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
+        sudo mkdir /etc/solbuild
+        wget https://raw.githubusercontent.com/joebonrichie/solus-scripts/master/local-unstable-MAINPAK-x86_64.profile -P /tmp/
+        sudo mv /tmp/local-unstable-MAINPAK-x86_64.profile /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+        set -e
+        popd
+    else
+        echo "MAINPAK is empty, please edit the script and set it before continuing."
+    fi
 }
 
 # Concurrently clone repos
