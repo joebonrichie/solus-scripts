@@ -236,5 +236,39 @@ checkDeleteCache() {
     fi
 }
 
+Help()
+{
+   # Display Help
+   echo "Rebuild template script for rebuilding packages on Solus."
+   echo
+   echo "Please read and edit the script with the appriate parameters before starting."
+   echo "To run unattended passwordless sudo needed to be enabled. Use at your own risk."
+   echo
+   echo "Usage: ./rebuild-package.sh {setup,clone,bump,build,verify,commit,publish}"
+   echo
+   echo "Explaination of commands:"
+   echo
+   echo "Setup   : Creates a build repo in ~/rebuilds/MAINPAK"
+   echo "Clone   : Clones all the packages in PACKAGES to the build repo"
+   echo "Bump    : Increments the release number on all packages in the build repo"
+   echo "Build   : Iteratively builds all PACKAGES, if the package already exists in the local"
+   echo "        : repo it will skip to the next package"
+   echo "Verify  : Uses a git diff tool of choice to verify the rebuilds e.g. abi_used_libs"
+   echo "Commit  : Git commit the changes with a generic commit message"
+   echo "Publish : Iteratively runs makes publish to push the package to the build server,"
+   echo "        : waits for the package to be indexed into the repo before pushing the next."
+   echo "        : You may wish to use autopush instead."
+}
+
+while getopts ":h" option; do
+   case $option in
+      h) # display Help
+         Help
+         exit;;
+   esac
+done
+
 # This little guy allows to call functions as arguments.
 "$@"
+
+echo "Rerun with -h to display help."
