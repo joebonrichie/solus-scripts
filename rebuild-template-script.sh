@@ -132,6 +132,7 @@ verify() {
 }
 
 # Add and commit changes before publishing.
+# TODO: add an excludes mechanism to allow a non-generic message for some packages.
 commit() {
     set -e
     pushd ~/rebuilds/${MAINPAK}
@@ -267,20 +268,24 @@ Help() {
    echo "Rebuild template script for rebuilding packages on Solus."
    echo
    echo "Please read and edit the script with the appriate parameters before starting."
-   echo "Generally only the MAINPAK and PACKAGES variables will need to be set."
-   echo "To run unattended passwordless sudo needed to be enabled. Use at your own risk."
+   echo "Generally only the MAINPAK and PACKAGES variables will need to be set where MAINPAK"
+   echo "is the package you are rebuilding against and PACKAGES are the packages that need to"
+   echo "be rebuilt against it. To run unattended passwordless sudo needs to be enabled. Use at your own risk."
    echo
    echo "Usage: ./rebuild-package.sh {setup,clone,bump,build,verify,commit,publish,NUKE}"
    echo
    echo "Explaination of commands:"
    echo
-   echo "setup   : Creates a build repo as well as a custom local repo to build packages in"
-   echo "clone   : Clones all the packages in PACKAGES to the build repo"
-   echo "bump    : Increments the release number on all packages in the build repo"
-   echo "build   : Iteratively builds all PACKAGES, if the package already exists in the local"
+   echo "setup   : Creates a build repo for the rebuilds in as well as a custom local repo to place the resulting"
+   echo "        : eopkgs in. A custom local repo is used to isolate the normal local repo from the ongoing rebuilds."
+   echo "        : The custom repo configuration can be found in /etc/solbuild/ after running setup."
+   echo "        : If desired the custom repo can be edited to isolate it from the local repo."
+   echo "clone   : Clones all the packages in PACKAGES to the build repo (make package.clone)."
+   echo "bump    : Increments the release number in the package.yml file on all packages in the build repo (make bump)"
+   echo "build   : Iteratively builds all packages in PACKAGES. If the package already exists in the local"
    echo "        : repo it will skip to the next package. Passwordless sudo is recommended here so it can run unattended."
-   echo "verify  : Uses a git diff tool of choice to verify the rebuilds e.g. abi_used_libs"
-   echo "commit  : Git commit the changes with a generic commit message"
+   echo "verify  : Uses a git diff tool of choice to verify the rebuilds e.g. to verify abi_used_libs has changed in all packages."
+   echo "commit  : Git commit the changes with a generic commit message."
    echo "publish : Iteratively runs makes publish to push the package to the build server,"
    echo "        : waits for the package to be indexed into the repo before pushing the next."
    echo "        : You may wish to use autopush instead."
