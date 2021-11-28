@@ -7,16 +7,7 @@
 # and ideally the tooling and infrastructure will be updated in the
 # future to handle someof the shortcomings so scripts like these won't be neccessary.
 
-# Typically, you would build the MAINPAK as usual and place it in /var/lib/solbuild/local/$MAINPAK/
-# You'll need to copy local-unstable-MAINPAK-x86_64.profile to /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
-# and rename MAINPAK to the package you are building against.
-# Then run ./rebuild.sh {setup,clone,bump,build,verify,commit,publish} for a typical workflow.
-
-# Don't DOS the server
-CONCURRENT_NETWORK_REQUESTS=8
-
-# At what percentage of disk usage does delete-cache run automatically
-DELETE_CACHE_THRESHOLD=80
+# See Help() for usage.
 
 # The package we are building against. Should be in our custom local repo.
 MAINPAK="foobar"
@@ -24,8 +15,14 @@ MAINPAK="foobar"
 # The packages to rebuild, in the order they need to be rebuilt.
 # Use eopkg info and eopkg-deps to get the rev deps of the main package
 # and take care to order them properly as we currently do not have
-# a reverse dependency graph in eopkg.
+# a proper reverse dependency graph in eopkg.
 PACKAGES="foo bar xyz"
+
+# Don't DOS the server
+CONCURRENT_NETWORK_REQUESTS=8
+
+# At what percentage of disk usage does delete-cache run automatically
+DELETE_CACHE_THRESHOLD=80
 
 # Track any troublesome packages here to deal with them manually.
 MANUAL="dogshit catshit"
@@ -40,7 +37,6 @@ setup() {
     if [ ! -z "$MAINPAK" ]; then
         # Setup the build repo
         mkdir -p ~/rebuilds/${MAINPAK}
-        sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
         pushd ~/rebuilds/${MAINPAK}
         git clone ssh://vcs@dev.getsol.us:2222/source/common.git
         ln -sv common/Makefile.common .
@@ -50,7 +46,7 @@ setup() {
         sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
         sudo mkdir /etc/solbuild
         wget https://raw.githubusercontent.com/joebonrichie/solus-scripts/master/local-unstable-MAINPAK-x86_64.profile -P /tmp/
-        sudo mv /tmp/local-unstable-MAINPAK-x86_64.profile /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+        sudo mv -v /tmp/local-unstable-MAINPAK-x86_64.profile /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
         set -e
         popd
     else
@@ -141,7 +137,7 @@ commit() {
         echo "Committing package" ${var} "out of" $(package_count) 
         make clean
         git add *
-        git commit -m "Rebuild against foobar"
+        git commit -m "Rebuild against ${MAINPAK}"
       popd
     done
     popd
@@ -176,6 +172,21 @@ publish() {
       popd
     done
     popd
+}
+
+NUKE() {
+        read -p "This will nuke all of your work, if you are sure input 'NUKE my work' to continue. " prompt
+        if [[ $prompt = "NUKE my work" ]]; then
+            echo "Removing rebuilds repo for ${MAINPAK}"
+            rm -fr ~/rebuilds/${MAINPAK}
+            echo "Removing custom local repo for ${MAINPAK}"
+            sudo rm -frv /var/lib/solbuild/local/${MAINPAK}
+            echo "Remove custom local repo configuration file"
+            sudo rm -v /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+            echo "Done."
+        else
+            echo "Wrong input to continue, aborting."
+        fi
 }
 
 # Move tracked packages in the local repo to the build repo
@@ -246,28 +257,31 @@ checkDeleteCache() {
     fi
 }
 
-Help()
-{
-   # Display Help
+# Display Help
+Help() {
    echo "Rebuild template script for rebuilding packages on Solus."
    echo
    echo "Please read and edit the script with the appriate parameters before starting."
+   echo "Generally only the MAINPAK and PACKAGES variables will need to be set."
    echo "To run unattended passwordless sudo needed to be enabled. Use at your own risk."
    echo
-   echo "Usage: ./rebuild-package.sh {setup,clone,bump,build,verify,commit,publish}"
+   echo "Usage: ./rebuild-package.sh {setup,clone,bump,build,verify,commit,publish,NUKE}"
    echo
    echo "Explaination of commands:"
    echo
-   echo "Setup   : Creates a build repo in ~/rebuilds/MAINPAK"
-   echo "Clone   : Clones all the packages in PACKAGES to the build repo"
-   echo "Bump    : Increments the release number on all packages in the build repo"
-   echo "Build   : Iteratively builds all PACKAGES, if the package already exists in the local"
-   echo "        : repo it will skip to the next package"
-   echo "Verify  : Uses a git diff tool of choice to verify the rebuilds e.g. abi_used_libs"
-   echo "Commit  : Git commit the changes with a generic commit message"
-   echo "Publish : Iteratively runs makes publish to push the package to the build server,"
+   echo "setup   : Creates a build repo as well as a custom local repo to build packages in"
+   echo "clone   : Clones all the packages in PACKAGES to the build repo"
+   echo "bump    : Increments the release number on all packages in the build repo"
+   echo "build   : Iteratively builds all PACKAGES, if the package already exists in the local"
+   echo "        : repo it will skip to the next package. Passwordless sudo is recommended here so it can run unattended."
+   echo "verify  : Uses a git diff tool of choice to verify the rebuilds e.g. abi_used_libs"
+   echo "commit  : Git commit the changes with a generic commit message"
+   echo "publish : Iteratively runs makes publish to push the package to the build server,"
    echo "        : waits for the package to be indexed into the repo before pushing the next."
    echo "        : You may wish to use autopush instead."
+   echo
+   echo "NUKE    : This will nuke all of your work and cleanup any created files or directories."
+   echo "        : This should only be done when all work has been indexed into the repo. Use with caution!"
 }
 
 while getopts ":h" option; do
