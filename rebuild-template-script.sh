@@ -194,6 +194,27 @@ publish() {
     echo -e "${PROGRESS} > Finished publishing packages! ${NC}"
 }
 
+scrapebuildserver() {
+    set -e
+    pushd ~/rebuilds/${MAINPAK}
+    for i in ${PACKAGES}
+    do
+        # Figure out eopkg string.
+        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
+        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
+        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
+
+        # The buildname of the package listed on the buildserver queue.
+        BUILDNAME="${PKGNAME}-${VERSION}-${RELEASE}"
+
+        if [[ ! -z `curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-ok` ]]; then
+            echo -e "Build Succeeded on the Build Server"
+        else
+            echo -e "Build Failed on the Build Server"
+        fi
+    fi
+}
+
 NUKE() {
     read -p "This will nuke all of your work, if you are sure input NUKE my work to continue. " prompt
     if [[ $prompt = "NUKE my work" ]]; then
