@@ -187,17 +187,18 @@ publish() {
         # Take note: your unstable repo can be called anything.
         while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
           echo -e "${INFO} > ${i} not ready ${NC}"
+
           sleep 30
 
           # Add a sanity check in case the build has failed on the buildserver for whatever reason.
           if [[ ! -z `curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-failed` ]]; then
-            echo -e "${ERROR} > Build Failed on the Build Server, aborting. ${NC}"
+            echo -e "${ERROR} > ${i} failed on the build server, aborting. ${NC}"
             exit 1
           fi
 
           sudo eopkg ur
         done
-        echo -e "${PROGRESS} > ${i} has been indexed in the repo ${NC}"
+        echo -e "${PROGRESS} > ${i} has been indexed into the repo ${NC}"
       popd
     done
     popd
