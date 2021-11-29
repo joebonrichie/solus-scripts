@@ -27,35 +27,43 @@ DELETE_CACHE_THRESHOLD=80
 # Track any troublesome packages here to deal with them manually.
 MANUAL="dogshit catshit"
 
+# Colours
+ERROR='\033[0;31m' # red
+INFO='\033[1;34m' # blue
+PROGRESS='\033[0;32m' # green
+NC='\033[0m' # No Color
+
 # Count the number of packages
 package_count() {
-    echo ${PACKAGES} | wc -w
+    echo -e ${PACKAGES} | wc -w
 }
 
 # Setup a build repo and a custom local repo for the rebuilds
 setup() {
     if [ ! -z "$MAINPAK" ]; then
-        # Setup the build repo
+        echo -e "${INFO} > Setting up build repo...${NC}"
         mkdir -p ~/rebuilds/${MAINPAK}
         pushd ~/rebuilds/${MAINPAK}
         git clone ssh://vcs@dev.getsol.us:2222/source/common.git
         ln -sv common/Makefile.common .
         ln -sv common/Makefile.toplevel Makefile
         ln -sv common/Makefile.iso .
-        # Setup a custom local repo
+        echo -e "${INFO} > Setting up custom local repo...${NC}"
         sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
         sudo mkdir /etc/solbuild
         wget https://raw.githubusercontent.com/joebonrichie/solus-scripts/master/local-unstable-MAINPAK-x86_64.profile -P /tmp/
         sudo mv -v /tmp/local-unstable-MAINPAK-x86_64.profile /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+        echo -e "${PROGRESS} > Done! ${NC}"
         set -e
         popd
     else
-        echo "MAINPAK is empty, please edit the script and set it before continuing."
+        echo -e "> ${ERROR} MAINPAK is empty, please edit the script and set it before continuing.${NC}"
     fi
 }
 
 # Concurrently clone repos
 clone() {
+    echo -e "${INFO} > Cloning packages...${NC}"
     pushd ~/rebuilds/${MAINPAK}
     (
     for i in ${PACKAGES}; do
@@ -64,10 +72,12 @@ clone() {
     done
     )
     popd
+    echo -e "${PROGRESS} > Done! ${NC}"
 }
 
 # Run make bump on all packages
 bump() {
+    echo -e "${INFO} > Bumping the release number...${NC}"
     pushd ~/rebuilds/${MAINPAK}
     for i in ${PACKAGES}
       do
@@ -78,6 +88,7 @@ bump() {
         popd
       done
     popd
+    echo -e "${PROGRESS} > Done! ${NC}"
 }
 
 # Build all packages and move resulting eopkgs to local repo. Stop on error.
@@ -101,10 +112,10 @@ build() {
             VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
             EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
-            echo "Building package" ${var} "out of" $(package_count)
+            echo -e "${INFO} > Building package" ${var} "out of" $(package_count) "${NC}"
             # ! `ls *.eopkg`
             if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
-                echo "Package doesn't exist, building:" ${i}
+                echo -e "Package doesn't exist, building:" ${i}
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64.profile;
                 make abireport
                 sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
@@ -113,7 +124,7 @@ build() {
         done
         popd
     else
-        echo "No package ${MAINPAK} was found in the repo. Remember to copy it to /var/lib/solbuild/local/${MAINPAK} before starting."
+        echo -e "${ERROR} > No package ${MAINPAK} was found in the repo. Remember to copy it to /var/lib/solbuild/local/${MAINPAK} before starting. ${NC}"
     fi
 }
 
@@ -124,7 +135,7 @@ verify() {
     do
       pushd ${i}
         var=$((var+1))
-        echo "Verifying package" ${var} "out of" $(package_count) 
+        echo -e "Verifying package" ${var} "out of" $(package_count)
         git difftool --tool=gvimdiff3
       popd
     done
@@ -134,19 +145,21 @@ verify() {
 # Add and commit changes before publishing.
 # TODO: add an excludes mechanism to allow a non-generic message for some packages.
 commit() {
+    echo -e "${INFO} > Committing changes for each package to git...${NC}"
     set -e
     pushd ~/rebuilds/${MAINPAK}
     for i in ${PACKAGES}
     do
       pushd ${i}
         var=$((var+1))
-        echo "Committing package" ${var} "out of" $(package_count) 
+        echo -e "Committing package" ${var} "out of" $(package_count)
         make clean
         git add *
         git commit -m "Rebuild against ${MAINPAK}"
       popd
     done
     popd
+    echo -e "${PROGRESS} > Done! ${NC}"
 }
 
 # Publish package to the build server and wait for it to be indexed into the repo
@@ -159,7 +172,7 @@ publish() {
     do
       pushd ${i}
         var=$((var+1))
-        echo "Publishing package" ${var} "out of" $(package_count)
+        echo -e "${INFO} > Publishing package" ${var} "out of" $(package_count) "${NC}"
         make publish
         
         # Figure out eopkg string.
@@ -170,28 +183,29 @@ publish() {
 
         # Take note: your unstable repo can be called anything.
         while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
-          echo "${i} not ready"
+          echo -e "${i} not ready"
           sleep 30
           sudo eopkg ur
         done
-        echo "Finished ${i}"
+        echo -e "${PROGRESS} Finished ${i} ${NC}"
       popd
     done
     popd
+    echo -e "${PROGRESS} > Finished publishing packages! ${NC}"
 }
 
 NUKE() {
-        read -p "This will nuke all of your work, if you are sure input 'NUKE my work' to continue. " prompt
+        read -p "This will nuke all of your work, if you are sure input NUKE my work to continue. " prompt
         if [[ $prompt = "NUKE my work" ]]; then
-            echo "Removing rebuilds repo for ${MAINPAK}"
+            echo -e "Removing rebuilds repo for ${MAINPAK}"
             rm -fr ~/rebuilds/${MAINPAK}
-            echo "Removing custom local repo for ${MAINPAK}"
+            echo -e "Removing custom local repo for ${MAINPAK}"
             sudo rm -frv /var/lib/solbuild/local/${MAINPAK}
-            echo "Remove custom local repo configuration file"
+            echo -e "Remove custom local repo configuration file"
             sudo rm -v /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
-            echo "Done."
+            echo -e "${PROGRESS} > Nuked. ${NC}"
         else
-            echo "Wrong input to continue, aborting."
+            echo -e "${ERROR} Wrong input to continue, aborting. ${NC}"
         fi
 }
 
@@ -212,9 +226,9 @@ moveLocaltoRepo() {
         VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
-        echo "Moving package" ${var} "out of" $(package_count) "to build repo"
+        echo -e "Moving package" ${var} "out of" $(package_count) "to build repo"
         if [[ `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
-          echo ${i}
+          echo -e ${i}
           sudo mv /var/lib/solbuild/local/${MAINPAK}/${PKGNAME}-*${VERSION}-${RELEASE}-1-x86_64.eopkg .
         fi;
       popd
@@ -230,9 +244,9 @@ moveRepotoLocal() {
       pushd ${i}
         var=$((var+1))
 
-        echo "Moving package" ${var} "out of" $(package_count) "to local repo"
+        echo -e "Moving package" ${var} "out of" $(package_count) "to local repo"
         if [[ `ls *.eopkg` ]]; then
-          echo ${i}
+          echo -e ${i}
           sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
         fi;
       popd
@@ -247,11 +261,12 @@ cleanLocal(){
     do
       pushd ${i}
         var=$((var+1))
-        echo "Cleaning package(s)" ${var} "out of" $(package_count)
+        echo -e "${INFO} > Cleaning package(s)" ${var} "out of" $(package_count) "${NC}"
         make clean
       popd
     done
     popd
+    echo -e "${PROGRESS} > Finished cleaning packages(s)! ${NC}"
 }
 
 # If disk usage of the root parition is over a threshold then run
@@ -308,4 +323,4 @@ done
 # This little guy allows to call functions as arguments.
 "$@"
 
-echo "Rerun with -h to display help."
+echo -e "Rerun with -h to display help."
