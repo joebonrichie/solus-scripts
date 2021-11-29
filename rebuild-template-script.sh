@@ -265,33 +265,36 @@ checkDeleteCache() {
 
 # Display Help
 Help() {
-   echo "Rebuild template script for rebuilding packages on Solus."
-   echo
-   echo "Please read and edit the script with the appriate parameters before starting."
-   echo "Generally only the MAINPAK and PACKAGES variables will need to be set where MAINPAK"
-   echo "is the package you are rebuilding against and PACKAGES are the packages that need to"
-   echo "be rebuilt against it. To run unattended passwordless sudo needs to be enabled. Use at your own risk."
-   echo
-   echo "Usage: ./rebuild-package.sh {setup,clone,bump,build,verify,commit,publish,NUKE}"
-   echo
-   echo "Explaination of commands:"
-   echo
-   echo "setup   : Creates a build repo for the rebuilds in as well as a custom local repo to place the resulting"
-   echo "        : eopkgs in. A custom local repo is used to isolate the normal local repo from the ongoing rebuilds."
-   echo "        : The custom repo configuration can be found in /etc/solbuild/ after running setup."
-   echo "        : If desired the custom repo can be edited to isolate it from the local repo."
-   echo "clone   : Clones all the packages in PACKAGES to the build repo (make package.clone)."
-   echo "bump    : Increments the release number in the package.yml file on all packages in the build repo (make bump)"
-   echo "build   : Iteratively builds all packages in PACKAGES. If the package already exists in the local"
-   echo "        : repo it will skip to the next package. Passwordless sudo is recommended here so it can run unattended."
-   echo "verify  : Uses a git diff tool of choice to verify the rebuilds e.g. to verify abi_used_libs has changed in all packages."
-   echo "commit  : Git commit the changes with a generic commit message."
-   echo "publish : Iteratively runs makes publish to push the package to the build server,"
-   echo "        : waits for the package to be indexed into the repo before pushing the next."
-   echo "        : You may wish to use autopush instead."
-   echo
-   echo "NUKE    : This will nuke all of your work and cleanup any created files or directories."
-   echo "        : This should only be done when all work has been indexed into the repo. Use with caution!"
+cat << EOF
+   Rebuild template script for rebuilding packages on Solus.
+
+   Please read and edit the script with the appriate parameters before starting.
+   Generally only the MAINPAK and PACKAGES variables will need to be set where MAINPAK
+   is the package you are rebuilding against and PACKAGES are the packages that need to
+   be rebuilt against it. To run unattended passwordless sudo needs to be enabled. Use at your own risk.
+
+   Usage: ./rebuild-package.sh {setup,clone,bump,build,verify,commit,publish,NUKE}
+
+   Explaination of commands:
+
+   setup   : Creates a build repo for the rebuilds in as well as a custom local repo to place the resulting
+           : eopkgs in. A custom local repo is used to isolate the normal local repo from the ongoing rebuilds.
+           : The custom repo configuration can be found in /etc/solbuild/ after running setup.
+           : If desired the custom repo can be edited to isolate it from the local repo.
+   clone   : Clones all the packages in PACKAGES to the build repo (make package.clone).
+   bump    : Increments the release number in the package.yml file on all packages in the build repo (make bump)
+   build   : Iteratively builds all packages in PACKAGES. If the package already exists in the local
+           : repo it will skip to the next package. Passwordless sudo is recommended here so it can run unattended.
+   verify  : Uses a git diff tool of choice to verify the rebuilds e.g. to verify abi_used_libs has changed in all packages.
+   commit  : Git commit the changes with a generic commit message.
+   publish : Iteratively runs makes publish to push the package to the build server,
+           : waits for the package to be indexed into the repo before pushing the next.
+           : You may wish to use autopush instead.
+
+   NUKE    : This will nuke all of your work and cleanup any created files or directories.
+           : This should only be done when all work has been indexed into the repo. Use with caution!"
+
+EOF
 }
 
 while getopts ":h" option; do
