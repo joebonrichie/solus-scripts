@@ -112,10 +112,10 @@ build() {
             VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
             EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
-            echo -e "${INFO} > Building package" ${var} "out of" $(package_count) "${NC}"
+            echo -e "${PROGRESS} > Building package" ${var} "out of" $(package_count) "${NC}"
             # ! `ls *.eopkg`
             if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
-                echo -e "${PROGRESS} Package doesn't exist, building: ${i} ${NC}"
+                echo -e "${INFO} Package doesn't exist, building: ${i} ${NC}"
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64;
                 make abireport
                 sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
@@ -172,7 +172,7 @@ publish() {
     do
       pushd ${i}
         var=$((var+1))
-        echo -e "${INFO} > Publishing package" ${var} "out of" $(package_count) "${NC}"
+        echo -e "${PROGRESS} > Publishing package" ${var} "out of" $(package_count) "${NC}"
         make publish
         
         # Figure out eopkg string.
@@ -181,38 +181,27 @@ publish() {
         VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
+        # The buildname of the package listed on the buildserver queue.
+        BUILDNAME="${PKGNAME}-${VERSION}-${RELEASE}"
+
         # Take note: your unstable repo can be called anything.
         while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
-          echo -e "${i} not ready"
+          echo -e "${INFO} > ${i} not ready ${NC}"
           sleep 30
+
+          # Add a sanity check in case the build has failed on the buildserver for whatever reason.
+          if [[ ! -z `curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-failed` ]]; then
+            echo -e "${ERROR} > Build Failed on the Build Server, aborting. ${NC}"
+            exit 1
+          fi
+
           sudo eopkg ur
         done
-        echo -e "${PROGRESS} Finished ${i} ${NC}"
+        echo -e "${PROGRESS} > ${i} has been indexed in the repo ${NC}"
       popd
     done
     popd
     echo -e "${PROGRESS} > Finished publishing packages! ${NC}"
-}
-
-scrapebuildserver() {
-    set -e
-    pushd ~/rebuilds/${MAINPAK}
-    for i in ${PACKAGES}
-    do
-        # Figure out eopkg string.
-        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
-        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
-        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
-
-        # The buildname of the package listed on the buildserver queue.
-        BUILDNAME="${PKGNAME}-${VERSION}-${RELEASE}"
-
-        if [[ ! -z `curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-ok` ]]; then
-            echo -e "Build Succeeded on the Build Server"
-        else
-            echo -e "Build Failed on the Build Server"
-        fi
-    fi
 }
 
 NUKE() {
