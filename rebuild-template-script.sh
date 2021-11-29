@@ -69,11 +69,10 @@ clone() {
     (
     for i in ${PACKAGES}; do
         ((j=j%CONCURRENT_NETWORK_REQUESTS)); ((j++==0)) && wait
-        git clone ssh://vcs@dev.getsol.us:2222/source/${i}.git &
+        make ${i}.clone &
     done
     )
     popd
-    echo -e "${PROGRESS} > Done! ${NC}"
 }
 
 # Run make bump on all packages
