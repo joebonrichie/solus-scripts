@@ -115,7 +115,7 @@ build() {
             echo -e "${INFO} > Building package" ${var} "out of" $(package_count) "${NC}"
             # ! `ls *.eopkg`
             if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
-                echo -e "Package doesn't exist, building:" ${i}
+                echo -e "${PROGRESS} Package doesn't exist, building: ${i} ${NC}"
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64.profile;
                 make abireport
                 sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
@@ -195,18 +195,18 @@ publish() {
 }
 
 NUKE() {
-        read -p "This will nuke all of your work, if you are sure input NUKE my work to continue. " prompt
-        if [[ $prompt = "NUKE my work" ]]; then
-            echo -e "Removing rebuilds repo for ${MAINPAK}"
-            rm -fr ~/rebuilds/${MAINPAK}
-            echo -e "Removing custom local repo for ${MAINPAK}"
-            sudo rm -frv /var/lib/solbuild/local/${MAINPAK}
-            echo -e "Remove custom local repo configuration file"
-            sudo rm -v /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
-            echo -e "${PROGRESS} > Nuked. ${NC}"
-        else
-            echo -e "${ERROR} Wrong input to continue, aborting. ${NC}"
-        fi
+    read -p "This will nuke all of your work, if you are sure input NUKE my work to continue. " prompt
+    if [[ $prompt = "NUKE my work" ]]; then
+        echo -e "${INFO} >  Removing rebuilds repo for ${MAINPAK} ${NC}"
+        rm -fr ~/rebuilds/${MAINPAK}
+        echo -e "${INFO} > Removing custom local repo for ${MAINPAK} ${NC}"
+        sudo rm -frv /var/lib/solbuild/local/${MAINPAK}
+        echo -e "${INFO} > Remove custom local repo configuration file ${NC}"
+        sudo rm -v /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
+        echo -e "${PROGRESS} > Nuked. ${NC}"
+    else
+        echo -e "${ERROR} Wrong input to continue, aborting. ${NC}"
+    fi
 }
 
 # Move tracked packages in the local repo to the build repo
