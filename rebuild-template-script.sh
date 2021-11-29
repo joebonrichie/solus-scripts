@@ -52,6 +52,7 @@ setup() {
         sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
         sudo mkdir /etc/solbuild
         wget https://raw.githubusercontent.com/joebonrichie/solus-scripts/master/local-unstable-MAINPAK-x86_64.profile -P /tmp/
+        sed -i "s/MAINPAK/${MAINPAK}/g" "/tmp/local-unstable-MAINPAK-x86_64.profile"
         sudo mv -v /tmp/local-unstable-MAINPAK-x86_64.profile /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
         echo -e "${PROGRESS} > Done! ${NC}"
         set -e
