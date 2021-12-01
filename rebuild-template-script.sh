@@ -40,7 +40,7 @@ package_count() {
 
 # Setup a build repo and a custom local repo for the rebuilds
 setup() {
-    if [ ! -z "$MAINPAK" ]; then
+    if [ -n "$MAINPAK" ]; then
         echo -e "${INFO} > Setting up build repo...${NC}"
         mkdir -p ~/rebuilds/${MAINPAK}
         pushd ~/rebuilds/${MAINPAK}
@@ -107,14 +107,14 @@ build() {
             $(checkDeleteCache)
 
             # Figure out the eopkg string.
-            PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
-            RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
-            VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
+            PKGNAME=$(grep ^name < package.yml | awk '{ print $3 }' | tr -d "'")
+            RELEASE=$(grep ^release < package.yml | awk '{ print $3 }' | tr -d "'")
+            VERSION=$(grep ^version < package.yml | awk '{ print $3 }' | tr -d "'")
             EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
             echo -e "${PROGRESS} > Building package" ${var} "out of" $(package_count) "${NC}"
             # ! `ls *.eopkg`
-            if [[ ! `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
+            if [[ ! $(ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}) ]]; then
                 echo -e "${INFO} Package doesn't exist, building: ${i} ${NC}"
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64;
                 make abireport
@@ -176,22 +176,22 @@ publish() {
         make publish
         
         # Figure out eopkg string.
-        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
-        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
-        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
+        PKGNAME=$(grep ^name < package.yml | awk '{ print $3 }' | tr -d "'")
+        RELEASE=$(grep ^release < package.yml | awk '{ print $3 }' | tr -d "'")
+        VERSION=$(grep ^version < package.yml | awk '{ print $3 }' | tr -d "'")
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
         # The buildname of the package listed on the buildserver queue.
         BUILDNAME="${PKGNAME}-${VERSION}-${RELEASE}"
 
         # Take note: your unstable repo can be called anything.
-        while [[ `cat /var/lib/eopkg/index/unstable/eopkg-index.xml | grep ${EOPKG} | wc -l` -lt 1 ]] ; do 
+        while [[ $(grep ${EOPKG} < /var/lib/eopkg/index/Unstable/eopkg-index.xml | wc -l) -lt 1 ]] ; do
           echo -e "${INFO} > ${i} not ready ${NC}"
 
           sleep 30
 
           # Add a sanity check in case the build has failed on the buildserver for whatever reason.
-          if [[ ! -z `curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-failed` ]]; then
+          if [[ -n $(curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-failed) ]]; then
             echo -e "${ERROR} > ${i} failed on the build server, aborting. ${NC}"
             exit 1
           fi
@@ -232,13 +232,13 @@ moveLocaltoRepo() {
         var=$((var+1))
 
         # Figure out the eopkg string.
-        PKGNAME=`cat package.yml | grep ^name | awk '{ print $3 }' | tr -d "'"`
-        RELEASE=`cat package.yml | grep ^release | awk '{ print $3 }' | tr -d "'"`
-        VERSION=`cat package.yml | grep ^version | awk '{ print $3 }' | tr -d "'"`
+        PKGNAME=$(grep ^name < package.yml | awk '{ print $3 }' | tr -d "'")
+        RELEASE=$(grep ^release < package.yml | awk '{ print $3 }' | tr -d "'")
+        VERSION=$(grep ^version < package.yml | awk '{ print $3 }' | tr -d "'")
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
         echo -e "Moving package" ${var} "out of" $(package_count) "to build repo"
-        if [[ `ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}` ]]; then
+        if [[ $(ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}) ]]; then
           echo -e ${i}
           sudo mv /var/lib/solbuild/local/${MAINPAK}/${PKGNAME}-*${VERSION}-${RELEASE}-1-x86_64.eopkg .
         fi;
@@ -256,7 +256,7 @@ moveRepotoLocal() {
         var=$((var+1))
 
         echo -e "Moving package" ${var} "out of" $(package_count) "to local repo"
-        if [[ `ls *.eopkg` ]]; then
+        if [[ $(ls *.eopkg) ]]; then
           echo -e ${i}
           sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
         fi;
@@ -283,7 +283,7 @@ cleanLocal(){
 # If disk usage of the root parition is over a threshold then run
 # solbuild dc -a to free up disk space.
 checkDeleteCache() {
-    DISKUSAGE=`df -H / | awk '{ print $5 }' | cut -d'%' -f1 | sed 1d`
+    DISKUSAGE=$(df -H / | awk '{ print $5 }' | cut -d'%' -f1 | sed 1d)
     if [ $DISKUSAGE -ge $DELETE_CACHE_THRESHOLD ]; then
         sudo solbuild dc -a
     fi
