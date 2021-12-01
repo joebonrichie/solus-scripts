@@ -320,6 +320,18 @@ cat << EOF
    NUKE    : This will nuke all of your work and cleanup any created files or directories.
            : This should only be done when all work has been indexed into the repo. Use with caution!"
 
+   --------------------------------------------------------------------------------------------------------------------------
+
+   Miscellaneous Options:
+
+   moveLocaltoRepo : Move all the packages in the custom local repo (/var/lib/solbuild/local/MAINPAK/*.eopkg) back to their
+                     build repos from where they originated. If patterns are used to create a completely different subpackage name
+                     this may fail for those packages. This option can be useful for updating abi reports.
+   moveRepotoLocal : Move all the packages from their build repo of origin to the custom local repo (/var/lib/solbuild/local/MAINPAK/).
+   package_count   : Count the total number of packages that are marked to be rebuilt.
+   checkDeleteCache: If disk usage of the root partition is above 80%, then solbuild delete-cache --all will be run to free up disk space.
+                     This option is ran automatically periodically during build.
+
 EOF
 }
 
