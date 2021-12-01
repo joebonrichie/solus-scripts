@@ -96,7 +96,7 @@ bump() {
 build() {
     set -e
     # Do a naïve check that the package we are building against actually exists in the custom local repo before continuing.
-    if ( ls /var/lib/solbuild/local/${MAINPAK} | grep -q ${MAINPAK}); then
+    if ( /var/lib/solbuild/local/${MAINPAK}/*${MAINPAK}* ); then
         pushd ~/rebuilds/${MAINPAK}
         for i in ${PACKAGES}
         do
@@ -113,7 +113,8 @@ build() {
             EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
             echo -e "${PROGRESS} > Building package" ${var} "out of" $(package_count) "${NC}"
-            # ! `ls *.eopkg`
+
+            # Check if the eopkg already exists before building.
             if [[ ! $(ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}) ]]; then
                 echo -e "${INFO} Package doesn't exist, building: ${i} ${NC}"
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64;
@@ -122,6 +123,7 @@ build() {
             fi;
         popd
         done
+        echo -e "${PROGRESS} > All packages built! ${NC}"
         popd
     else
         echo -e "${ERROR} > No package ${MAINPAK} was found in the repo. Remember to copy it to /var/lib/solbuild/local/${MAINPAK} before starting. ${NC}"
