@@ -285,6 +285,7 @@ cleanLocal(){
 checkDeleteCache() {
     DISKUSAGE=$(df -H / | awk '{ print $5 }' | cut -d'%' -f1 | sed 1d)
     if [ $DISKUSAGE -ge $DELETE_CACHE_THRESHOLD ]; then
+        echo -e "${INFO} > Disk usage above ${DELETE_CACHE_THRESHOLD}%, running solbuild delete-cache --all...${NC}"
         sudo solbuild dc -a
     fi
 }
