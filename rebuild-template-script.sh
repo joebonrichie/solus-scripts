@@ -96,7 +96,7 @@ bump() {
 build() {
     set -e
     # Do a naïve check that the package we are building against actually exists in the custom local repo before continuing.
-    if ( /var/lib/solbuild/local/${MAINPAK}/*${MAINPAK}* ); then
+    if ( ls /var/lib/solbuild/local/${MAINPAK} | grep -q ${MAINPAK}); then
         pushd ~/rebuilds/${MAINPAK}
         for i in ${PACKAGES}
         do
