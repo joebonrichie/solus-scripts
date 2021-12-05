@@ -188,16 +188,18 @@ publish() {
 
         # Take note: your unstable repo can be called anything.
         while [[ $(grep ${EOPKG} < /var/lib/eopkg/index/Unstable/eopkg-index.xml | wc -l) -lt 1 ]] ; do
-          echo -e "${INFO} > ${i} not ready ${NC}"
 
+          echo -e "${INFO} > Waiting for ${i} to build and be indexed... ${NC}"
           sleep 30
 
+          echo -e "${INFO} > Checking that ${i} has not failed on the buildserver... ${NC}"
           # Add a sanity check in case the build has failed on the buildserver for whatever reason.
           if [[ -n $(curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-failed) ]]; then
             echo -e "${ERROR} > ${i} failed on the build server, aborting. ${NC}"
             exit 1
           fi
 
+          echo -e "${INFO} > Updating repo to see if ${i} has been indexed... ${NC}"
           sudo eopkg ur
         done
         echo -e "${PROGRESS} > ${i} has been indexed into the repo ${NC}"
