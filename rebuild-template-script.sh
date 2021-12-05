@@ -147,14 +147,20 @@ verify() {
 # Add and commit changes before publishing.
 # TODO: add an excludes mechanism to allow a non-generic message for some packages.
 commit() {
-    echo -e "${INFO} > Committing changes for each package to git...${NC}"
     set -e
     pushd ~/rebuilds/${MAINPAK}
+
+    # TODO: bail out as we'll need to pull, bump, and rebuild if new changes are pulled in...
+    echo -e "${INFO} > Running git pull first to see if we need to rebase...${NC}"
+    make pull -j${CONCURRENT_NETWORK_REQUESTS}
+
+    echo -e "${INFO} > Committing changes for each package to git...${NC}"
+
     for i in ${PACKAGES}
     do
       pushd ${i}
         var=$((var+1))
-        echo -e "Committing package" ${var} "out of" $(package_count)
+        echo -e "${INFO} > Committing package ${var} out of $(package_count) ${NC}"
         make clean
         git add *
         git commit -m "Rebuild against ${MAINPAK}"
