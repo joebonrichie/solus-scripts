@@ -66,7 +66,7 @@ setup() {
 clone() {
     echo -e "${INFO} > Cloning packages...${NC}"
     pushd ~/rebuilds/${MAINPAK}
-        make clone PKGS="${PACKAGES}"
+        make clone PKGS="${PACKAGES}" -j${CONCURRENT_NETWORK_REQUESTS}
     popd
 }
 
