@@ -77,6 +77,8 @@ bump() {
     for i in ${PACKAGES}
       do
         pushd ${i}
+          echo -e "${INFO} > Running git pull first to see if we need to rebase...${NC}"
+          git pull
           make bump
           # Backup for when pyyaml shits the bed with sources
           # perl -i -pe 's/(release    : )(\d+)$/$1.($2+1)/e' package.yml
@@ -96,7 +98,11 @@ build() {
         for i in ${PACKAGES}
         do
         pushd ${i}
+
             var=$((var+1))
+
+            echo -e "${INFO} > Running git pull first to see if we need to rebase...${NC}"
+            git pull
         
             # See if we need to free up some disk space before continuing.
             $(checkDeleteCache)
@@ -145,17 +151,15 @@ commit() {
     set -e
     pushd ~/rebuilds/${MAINPAK}
 
-    # TODO: bail out as we'll need to pull, bump, and rebuild if new changes are pulled in...
-    echo -e "${INFO} > Running git pull first to see if we need to rebase...${NC}"
-    make pull -j${CONCURRENT_NETWORK_REQUESTS}
-
     echo -e "${INFO} > Committing changes for each package to git...${NC}"
 
     for i in ${PACKAGES}
     do
       pushd ${i}
-        var=$((var+1))
         echo -e "${INFO} > Committing package ${var} out of $(package_count) ${NC}"
+        var=$((var+1))
+        echo -e "${INFO} > Running git pull first to see if we need to rebase...${NC}"
+        git pull
         make clean
         git add *
         git commit -m "Rebuild against ${MAINPAK}"
@@ -175,6 +179,7 @@ publish() {
     do
       pushd ${i}
         var=$((var+1))
+
         echo -e "${PROGRESS} > Publishing package" ${var} "out of" $(package_count) "${NC}"
         make publish
         
