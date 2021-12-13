@@ -100,9 +100,6 @@ build() {
         pushd ${i}
 
             var=$((var+1))
-
-            echo -e "${INFO} > Running git pull first to see if we need to rebase...${NC}"
-            git pull
         
             # See if we need to free up some disk space before continuing.
             $(checkDeleteCache)
