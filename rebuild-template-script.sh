@@ -116,7 +116,6 @@ build() {
             if [[ ! $(ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}) ]]; then
                 echo -e "${INFO} Package doesn't exist, building: ${i} ${NC}"
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64;
-                make abireport
                 sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
             fi;
         popd
