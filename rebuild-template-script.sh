@@ -128,6 +128,39 @@ build() {
     fi
 }
 
+# Generate a "clean" abireport for most packages
+# Until ypkg3 where yabi/abi-wizard gets run inside the chroot this will have to do
+# Can fail with subpackages
+cleanabireport() {
+    # Get the most recent eopkg history point
+    eopkg_history_point = $(eopkg history | grep -m 1 "" | egrep -o '[[:digit:]]*')
+
+    $(moveLocaltoRepo)
+
+    pushd ~/rebuilds/${MAINPAK}
+    for i in ${PACKAGES}
+    do
+      pushd ${i}
+
+        # Figure out eopkg string.
+        PKGNAME=$(grep ^name < package.yml | awk '{ print $3 }' | tr -d "'")
+        RELEASE=$(grep ^release < package.yml | awk '{ print $3 }' | tr -d "'")
+        VERSION=$(grep ^version < package.yml | awk '{ print $3 }' | tr -d "'")
+        EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
+
+        sudo eopkg it $EOPKG -y
+
+        make abireport
+      popd
+    done
+    popd
+
+    $(moveRepotoLocal)
+
+    sudo eopkg history -t $eopkg_history_point -y
+
+}
+
 # Use tool of choice here to verify changes e.g. git diff, meld, etc.
 verify() {
     pushd ~/rebuilds/${MAINPAK}
