@@ -49,7 +49,7 @@ setup() {
         ln -sv common/Makefile.toplevel Makefile
         ln -sv common/Makefile.iso .
         echo -e "${INFO} > Setting up custom local repo...${NC}"
-        sudo mkdir -p /var/lib/solbuild/local/${MAINPAK}
+        sudo mkdir -p /var/lib/solbuild/local-${MAINPAK}
         sudo mkdir /etc/solbuild
         wget https://raw.githubusercontent.com/joebonrichie/solus-scripts/master/local-unstable-MAINPAK-x86_64.profile -P /tmp/
         sed -i "s/MAINPAK/${MAINPAK}/g" "/tmp/local-unstable-MAINPAK-x86_64.profile"
@@ -93,7 +93,7 @@ bump() {
 build() {
     set -e
     # Do a naïve check that the package we are building against actually exists in the custom local repo before continuing.
-    if ( ls /var/lib/solbuild/local/${MAINPAK} | grep -q ${MAINPAK}); then
+    if ( ls /var/lib/solbuild/local-${MAINPAK} | grep -q ${MAINPAK}); then
         pushd ~/rebuilds/${MAINPAK}
         for i in ${PACKAGES}
         do
@@ -113,17 +113,17 @@ build() {
             echo -e "${PROGRESS} > Building package" ${var} "out of" $(package_count) "${NC}"
 
             # Check if the eopkg already exists before building.
-            if [[ ! $(ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}) ]]; then
+            if [[ ! $(ls /var/lib/solbuild/local-${MAINPAK}/${EOPKG}) ]]; then
                 echo -e "${INFO} Package doesn't exist, building: ${i} ${NC}"
                 sudo solbuild build package.yml -p local-unstable-${MAINPAK}-x86_64;
-                sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
+                sudo mv *.eopkg /var/lib/solbuild/local-${MAINPAK}/
             fi;
         popd
         done
         echo -e "${PROGRESS} > All packages built! ${NC}"
         popd
     else
-        echo -e "${ERROR} > No package ${MAINPAK} was found in the repo. Remember to copy it to /var/lib/solbuild/local/${MAINPAK} before starting. ${NC}"
+        echo -e "${ERROR} > No package ${MAINPAK} was found in the repo. Remember to copy it to /var/lib/solbuild/local-${MAINPAK} before starting. ${NC}"
     fi
 }
 
@@ -250,7 +250,7 @@ NUKE() {
         echo -e "${INFO} >  Removing rebuilds repo for ${MAINPAK} ${NC}"
         rm -fr ~/rebuilds/${MAINPAK}
         echo -e "${INFO} > Removing custom local repo for ${MAINPAK} ${NC}"
-        sudo rm -frv /var/lib/solbuild/local/${MAINPAK}
+        sudo rm -frv /var/lib/solbuild/local-${MAINPAK}
         echo -e "${INFO} > Remove custom local repo configuration file ${NC}"
         sudo rm -v /etc/solbuild/local-unstable-${MAINPAK}-x86_64.profile
         echo -e "${PROGRESS} > Nuked. ${NC}"
@@ -277,9 +277,9 @@ moveLocaltoRepo() {
         EOPKG="${PKGNAME}-${VERSION}-${RELEASE}-1-x86_64.eopkg"
 
         echo -e "Moving package" ${var} "out of" $(package_count) "to build repo"
-        if [[ $(ls /var/lib/solbuild/local/${MAINPAK}/${EOPKG}) ]]; then
+        if [[ $(ls /var/lib/solbuild/local-${MAINPAK}/${EOPKG}) ]]; then
           echo -e ${i}
-          sudo mv /var/lib/solbuild/local/${MAINPAK}/${PKGNAME}-*${VERSION}-${RELEASE}-1-x86_64.eopkg .
+          sudo mv /var/lib/solbuild/local-${MAINPAK}/${PKGNAME}-*${VERSION}-${RELEASE}-1-x86_64.eopkg .
         fi;
       popd
     done
@@ -297,7 +297,7 @@ moveRepotoLocal() {
         echo -e "Moving package" ${var} "out of" $(package_count) "to local repo"
         if [[ $(ls *.eopkg) ]]; then
           echo -e ${i}
-          sudo mv *.eopkg /var/lib/solbuild/local/${MAINPAK}/
+          sudo mv *.eopkg /var/lib/solbuild/local-${MAINPAK}/
         fi;
       popd
     done
