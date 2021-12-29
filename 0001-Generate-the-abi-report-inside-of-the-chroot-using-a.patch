@@ -1,14 +1,21 @@
-From 54a804a4a78f4325f907af7e2288758271fc7a1a Mon Sep 17 00:00:00 2001
+From 65465b6b47b6aecee0d3696a3a9f4818b5b390c2 Mon Sep 17 00:00:00 2001
 From: Joey Riches <josephriches@gmail.com>
-Date: Tue, 14 Dec 2021 11:34:39 +0000
-Subject: [PATCH 2/2] Generate ABI report using yabi inside of chroot
+Date: Wed, 29 Dec 2021 20:13:30 +0000
+Subject: [PATCH 1/1] Generate the abi report inside of the chroot using
+ abi-wizard
 
+This runs the abi-wizard inside of the chroot on the %installroot%
+directory. This solves the problem of unclean abi reports when
+packager's do not have all the dependencies installed.
+
+This requires abi-wizard to be packaged as part of the system.base or
+system.devel component to ensure that it is available inside the chroot.
 ---
- src/builder/build.go | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ src/builder/build.go | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
 diff --git a/src/builder/build.go b/src/builder/build.go
-index c8d952d..9d81414 100644
+index ca77a91..801d953 100644
 --- a/src/builder/build.go
 +++ b/src/builder/build.go
 @@ -395,6 +395,16 @@ func (p *Package) BuildYpkg(notif PidNotifier, usr *UserInfo, pman *EopkgManager
@@ -28,41 +35,33 @@ index c8d952d..9d81414 100644
  	notif.SetActivePID(0)
  	return nil
  }
-@@ -450,6 +460,29 @@ func (p *Package) BuildXML(notif PidNotifier, pman *EopkgManager, overlay *Overl
+@@ -450,6 +460,21 @@ func (p *Package) BuildXML(notif PidNotifier, pman *EopkgManager, overlay *Overl
  	return nil
  }
  
-+// GenerateABIReport will take care of generating the abireport using the yabi binary
-+// It will only be called by CollectAssets.
++// GenerateABIReport will take care of generating the abireport using abi-wizard
 +func (p *Package) GenerateABIReport(notif PidNotifier, overlay *Overlay) error {
-+	// Generate abireports within chroot using yabi
-+	// FIXME: do something about the pushd hack
-+	// FIXME: more error checking, os.stat inside of chroot?
-+	// FIXME: Debug messages
-+	// FIXME: Allow toggle to disable incase of extremely large eopkgs (texlive)
-+	// FIXME: Ignore eopkgs over a certain size and prompt user to run abireport manually (again texlive)
-+
-+	log.Printf("Running yabi from solbuild!")
-+	cmd := fmt.Sprintf("pushd /home/build/work/; /usr/bin/yabi *.eopkg; popd")
-+	if err := ChrootExec(notif, overlay.MountPoint, cmd); err != nil {
-+		log.WithFields(log.Fields{
++	wdir := p.GetWorkDirInternal()
++	log.Printf("Generating ABI Report...")
++	cmd := fmt.Sprintf("cd %s; abi-wizard %s/YPKG/root/%s/install", wdir, BuildUserHome, p.Name)
++		if err := ChrootExec(notif, overlay.MountPoint, cmd); err != nil {
++			log.WithFields(log.Fields{
 +			"error": err,
-+		}).Error("Failed to generate abireport with yabi")
++		}).Error("Failed to generate abireport with abi-wizard")
 +		return err
 +	}
 +	notif.SetActivePID(0)
 +	return nil
 +}
 +
-+
  // CollectAssets will search for the build files and copy them back to the
  // users current directory. If solbuild was invoked via sudo, solbuild will
  // then attempt to set the owner as the original user.
-@@ -488,6 +521,10 @@ func (p *Package) CollectAssets(overlay *Overlay, usr *UserInfo, manifestTarget
+@@ -488,6 +513,10 @@ func (p *Package) CollectAssets(overlay *Overlay, usr *UserInfo, manifestTarget
  		collections = append(collections, tramPath)
  	}
  
-+	// FIXME: need errs here?
++	// Collect files from abireport
 +	abireportfiles, _ := filepath.Glob(filepath.Join(collectionDir, "abi_*"))
 +	collections = append(collections, abireportfiles...)
 +
