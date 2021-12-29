@@ -12,8 +12,12 @@ BUILDNAME="${PKGNAME}-${VERSION}-${RELEASE}"
 
 echo $BUILDNAME
 
-while [[ ! $(curl https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-ok) ]] ; do
+while [[ ! $(curl -s https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-ok) ]] ; do
     sleep 10
+    if [[ $(curl -s https://build.getsol.us | grep -A 3 ${BUILDNAME} | grep build-failed) ]] ; then
+        notify-send -u critical "${BUILDNAME} failed on the build server!" -t 0
+        paplay /usr/share/sounds/freedesktop/stereo/suspend-error.oga
+    fi
 done
 
 notify-send "$BUILDNAME finished building on the build server!" -t 0 && paplay /usr/share/sounds/freedesktop/stereo/message-new-instant.oga
